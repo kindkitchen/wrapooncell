@@ -1,6 +1,6 @@
 # The marker and the declaration of a pov-repo. `just status pov-repo` errors when it is not satisfied.
 #
-# No pov-repo lives below another: this is the only file of its name from here down.
+# No pov-repo lives below another: this is the only `.pov-repo/config.toml` from the root down.
 
 # Skill-repos are mounted at `<folder>/<name>/`.
 skill-repo.folder = "skills"
