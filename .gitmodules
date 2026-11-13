@@ -1,0 +1,4 @@
+[submodule "wrapooncell-cli"]
+	path = wrapooncell-cli
+	url = ./
+	branch = repo/wrapooncell-cli/main
