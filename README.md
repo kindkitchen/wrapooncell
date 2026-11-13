@@ -20,7 +20,7 @@ A pov-repo starts from the newest `t*-init-pov-repo` tag of this repository, the
 
 ## Opinions
 
-- **Folder.** A skill-repo is mounted at `<folder>/<name>/`, where the config names the folder: `skills` here. Its `SKILL.md` is context on need: read it when that node comes into play.
+- **Folder.** A skill-repo is mounted at `<folder>/<name>/`, where the config names the folder: `skills` here. Its `SKILL.md` is context on need: read it when that node comes into play. `.pi/settings.json` makes pi list them as skills.
 - **Entrypoint.** `justfile` is the public face of a pov-repo. The essential scripts behind it are nushell, in `.pov-repo/main.nu`.
 - **Origin.** For now a node lives in this same origin, as the branches `pov-repo/<name>/main`, `skill-repo/<name>/main` and `repo/<name>/main`.
 
