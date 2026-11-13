@@ -8,3 +8,12 @@ skill-repo.folder = "skills"
 # The mounted skill-repos and the branch each one is subscribed to: `<name> = "<branch>"`.
 [skill-repo.submodule]
 wrapooncell-cli = "skill-repo/wrapooncell-cli/main"
+
+# The pov-repos `just switch pov-repo` goes to: the branch each one is on, and its location when it has one.
+# Without a location it is a branch of this very repository. A location is a path from this root.
+[pov-repo.wrapooncell]
+branch = "main"
+
+[pov-repo.wrapooncell-cli]
+branch = "pov-repo/wrapooncell-cli/main"
+# location = "../wrapooncell-cli"

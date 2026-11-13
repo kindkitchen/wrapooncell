@@ -40,4 +40,21 @@ def "main status pov-repo" [] {
     if ($problems | is-empty) { print $'($config) is satisfied' } else { print ...($problems | each { $'- ($in)' }); exit 1 }
 }
 
+# Go to a pov-repo the config knows, picked from a list without a name:
+# to its location, when it has one and is there on its branch, else to its branch in this very repository.
+def "main switch pov-repo" [name?: string] {
+    cd ($env.FILE_PWD | path dirname)
+    let known = open $config | get --optional pov-repo | default {} | transpose name it
+        | each {|row| {name: $row.name, branch: $row.it.branch, location: $row.it.location?} }
+    let pick = if $name != null { $known | where name == $name | get 0? } else if ($known | is-not-empty) { $known | input list --fuzzy 'pov-repo' }
+    if $pick == null { if $name != null { error make --unspanned {msg: $'the config knows no pov-repo ($name)'} }; return }
+    if $pick.location == null { ^git switch --recurse-submodules $pick.branch; return }
+    let location = $pick.location | path expand
+    let on = ^git -C $location branch --show-current | str trim | default --empty 'no branch'
+    if $on != $pick.branch { error make --unspanned {msg: $'($location) is on ($on), not on ($pick.branch)'} }
+    print $'a shell at ($location): `exit` comes back'
+    cd $location
+    exec $nu.current-exe
+}
+
 def main [] { help main }
