@@ -7,3 +7,4 @@ skill-repo.folder = "skills"
 
 # The mounted skill-repos and the branch each one is subscribed to: `<name> = "<branch>"`.
 [skill-repo.submodule]
+wrapooncell-cli = "skill-repo/wrapooncell-cli/main"

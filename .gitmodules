@@ -1,0 +1,4 @@
+[submodule "skills/wrapooncell-cli"]
+	path = skills/wrapooncell-cli
+	url = https://github.com/kindkitchen/wrapooncell.git
+	branch = skill-repo/wrapooncell-cli/main
