@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pov-repo</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #f4f1e8; --surface: #fffdf7; --ink: #20242b; --muted: #676d79; --line: #d6d0c1;
+  --pov: #b4530a; --pov-bg: #fcefd9;
+  --skill: #0b7366; --skill-bg: #def2ed;
+  --repo: #47536d; --repo-bg: #e8ecf3;
+  --code-bg: #1e222c; --code-ink: #e9e6dc; --code-dim: #8c93a3;
+  --bad: #b42318; --good: #0b7366;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161b; --surface: #1c1f26; --ink: #e7e5de; --muted: #9aa1ad; --line: #353a45;
+    --pov: #f0a54a; --pov-bg: #33260f;
+    --skill: #45c4b2; --skill-bg: #0e2c29;
+    --repo: #9fb0cc; --repo-bg: #222a38;
+    --code-bg: #0e1015; --bad: #ff8a7a; --good: #45c4b2;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); }
+code, pre, .path, .chip, .pin { font-family: var(--mono); }
+code { font-size: .92em; }
+button { font: inherit; color: inherit; }
+h1, h2, h3, p { margin: 0; }
+
+.top { max-width: 1280px; margin: 0 auto; padding: 28px 24px 0; }
+.brand { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 18px; }
+h1 { font-size: 34px; letter-spacing: -.02em; }
+.formula { font-size: 17px; color: var(--muted); }
+.formula b { font-weight: 600; }
+.t-pov { color: var(--pov); } .t-skill { color: var(--skill); } .t-repo { color: var(--repo); }
+.lead { max-width: 62ch; margin-top: 8px; font-size: 17px; color: var(--muted); }
+.bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin-top: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+nav { display: flex; flex-wrap: wrap; gap: 6px; }
+nav button, .seg button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 15px; cursor: pointer; }
+nav button[aria-current="page"], .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
+.legend i { display: inline-block; width: 12px; height: 12px; margin-right: 6px; border-radius: 3px; border: 1.5px solid var(--c); background: var(--c-bg); vertical-align: -1px; }
+.legend .dash i { border-style: dashed; background: none; }
+
+main { max-width: 1280px; margin: 0 auto; padding: 22px 24px 40px; }
+.view { display: none; }
+.view.on { display: block; animation: rise .25s ease-out; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+h2 { font-size: 20px; letter-spacing: -.01em; }
+h3 { font-size: 12.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+h3.file { text-transform: none; letter-spacing: 0; font-family: var(--mono); }
+.sub { color: var(--muted); max-width: 70ch; margin-top: 4px; }
+.block { margin-top: 34px; }
+
+/* the three layers */
+.pov { --c: var(--pov); --c-bg: var(--pov-bg); }
+.skill { --c: var(--skill); --c-bg: var(--skill-bg); }
+.repo { --c: var(--repo); --c-bg: var(--repo-bg); }
+.box { position: relative; border: 1.5px solid var(--c); background: var(--c-bg); border-radius: 12px; padding: 9px 10px 10px; transition: opacity .2s, box-shadow .2s, filter .2s; }
+.box > header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin-bottom: 7px; }
+.path { font-weight: 600; font-size: 13.5px; color: var(--c); }
+.role { font-size: 12px; color: var(--muted); }
+.pin { margin-left: auto; font-size: 11.5px; padding: 0 6px; border-radius: 999px; background: var(--surface); border: 1px solid var(--c); color: var(--c); transition: background .3s, color .3s; }
+.pin.new { background: var(--c); color: var(--surface); }
+.pin.behind::after { content: " behind"; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { font-size: 12px; line-height: 1.5; padding: 1px 7px; border-radius: 6px; border: 1px solid color-mix(in srgb, var(--c) 40%, transparent); background: var(--surface); color: var(--ink); cursor: pointer; transition: box-shadow .2s, background .2s; }
+.box .box { margin-top: 8px; }
+.folder { margin-top: 9px; padding: 7px 8px 8px; border: 1px dashed color-mix(in srgb, var(--pov) 55%, transparent); border-radius: 10px; }
+.folder > .path { color: var(--muted); font-weight: 500; }
+[data-id] { cursor: pointer; }
+[data-id]:focus-visible, button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.hot { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c, var(--ink)) 38%, transparent); }
+.chip.hot { background: color-mix(in srgb, var(--c) 22%, var(--surface)); }
+.dim { opacity: .3; filter: saturate(.5); }
+.away { opacity: .42; filter: saturate(.35); padding-bottom: 30px; cursor: pointer; }
+.away::after { content: "another root: out of sight from here"; position: absolute; inset: auto 12px 8px auto; font-size: 12px; color: var(--ink); }
+.gone { display: none !important; }
+
+/* the anatomy */
+.idea { display: grid; grid-template-columns: minmax(0, 780px) minmax(0, 1fr); gap: 18px 28px; align-items: center; margin-top: 18px; }
+@media (max-width: 1000px) { .idea { grid-template-columns: minmax(0, 1fr); } }
+.layers { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.layers li { padding: 9px 12px; border-left: 3px solid var(--c); border-radius: 0 10px 10px 0; background: var(--surface); cursor: pointer; transition: background .2s; }
+.layers li:hover { background: var(--c-bg); }
+.layers b { display: block; font-family: var(--mono); color: var(--c); }
+.anatomy .mounts { display: grid; grid-template-columns: 1.5fr 1fr; gap: 8px; }
+.anatomy .mounts .box { margin-top: 6px; }
+@media (max-width: 620px) { .anatomy .mounts { grid-template-columns: 1fr; } }
+
+/* the rules */
+.rules { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 14px; }
+@media (max-width: 1000px) { .rules { grid-template-columns: repeat(2, 1fr); } }
+.rule { display: grid; align-content: start; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 10px 12px 12px; cursor: pointer; transition: border-color .2s, box-shadow .2s; }
+.rule:hover, .rule[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ink) 15%, transparent); }
+.rule svg { display: block; width: 100%; height: 58px; margin-bottom: 6px; }
+.rule b { display: block; }
+.rule span { display: block; font-size: 13px; color: var(--muted); line-height: 1.4; margin-top: 2px; }
+.rule svg .p { fill: var(--pov-bg); stroke: var(--pov); } .rule svg .s { fill: var(--skill-bg); stroke: var(--skill); } .rule svg .r { fill: var(--repo-bg); stroke: var(--repo); }
+.rule svg .l { stroke: var(--muted); fill: none; } .rule svg .ok { stroke: var(--good); fill: none; } .rule svg .no { stroke: var(--bad); fill: none; }
+.rule svg text { font: 9px var(--mono); fill: var(--muted); }
+.rule svg * { stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* declared, then checked */
+.check { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-top: 14px; }
+@media (max-width: 860px) { .check { grid-template-columns: minmax(0, 1fr); } }
+.card { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 12px 14px; }
+.card h3 { margin-bottom: 8px; }
+.toggles { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.toggles label { display: flex; gap: 8px; align-items: baseline; cursor: pointer; }
+pre { margin: 0; white-space: pre; }
+.code { background: var(--code-bg); color: var(--code-ink); border-radius: 10px; padding: 11px 13px; font-size: 12.5px; line-height: 1.55; overflow-x: auto; }
+.code + .code, p + .code, .code + p { margin-top: 9px; }
+.code .c { color: var(--code-dim); }
+.code .bad { color: #ff9c8f; } .code .good { color: #7fdccc; }
+.term { grid-column: 1 / -1; white-space: pre-wrap; }
+
+/* the demos */
+.demo { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 22px; align-items: start; margin-top: 16px; }
+@media (max-width: 1120px) { .demo { grid-template-columns: minmax(0, 1fr); } .demo > aside { order: -1; } .story { position: static; } }
+.demo > div { min-width: 0; }
+.steps { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; padding: 0; list-style: none; counter-reset: step; }
+.steps button { display: flex; align-items: center; gap: 7px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 13px 4px 5px; cursor: pointer; }
+.steps button::before { counter-increment: step; content: counter(step); display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--bg); font-size: 12px; font-weight: 600; }
+.steps button[aria-current="step"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.steps button[aria-current="step"]::before { background: var(--bg); color: var(--ink); }
+.scene { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 176px minmax(0, 1fr); gap: 14px 46px; align-items: start; }
+.scene.one { grid-template-columns: minmax(0, 1fr) 176px; }
+@media (max-width: 760px) { .scene, .scene.one { grid-template-columns: minmax(0, 1fr); padding-right: 40px; } }
+.wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.wire { fill: none; stroke: var(--skill); stroke-width: 1.5; stroke-dasharray: 5 5; opacity: .5; transition: opacity .2s, stroke-width .2s; }
+.wire.hot { opacity: 1; stroke-width: 2.5; animation: flow 1s linear infinite; }
+.wire.back { animation-direction: reverse; }
+.wire.faint { opacity: .13; }
+@keyframes flow { to { stroke-dashoffset: -20; } }
+.remotes { display: grid; gap: 12px; align-content: start; }
+.remotes > .path { color: var(--muted); font-weight: 500; text-align: center; }
+.remote { display: grid; gap: 0; justify-items: stretch; }
+.remote .box { border-style: dashed; text-align: center; padding: 6px 8px; margin: 0; }
+.remote .box header { display: block; margin: 0; }
+.remote .box .pin { display: inline-block; margin: 3px 0 0; }
+.remote .link { justify-self: center; width: 0; height: 14px; border-left: 1.5px solid var(--repo); }
+.empty { display: grid; place-items: center; min-height: 120px; border: 1.5px dashed var(--line); border-radius: 12px; color: var(--muted); font-size: 13px; }
+.branchbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 10px; }
+.branchbar code { color: var(--muted); }
+.seg { display: inline-flex; gap: 4px; }
+.asleep { margin-top: 10px; padding: 7px 10px; border: 1.5px dashed var(--line); border-radius: 10px; color: var(--muted); font-size: 13px; }
+.asleep:hover { border-color: var(--pov); }
+.swap { animation: swap .35s ease-out; }
+@keyframes swap { from { opacity: 0; transform: scale(.985); } }
+
+.story { display: grid; gap: 10px; position: sticky; top: 14px; }
+.story .card p + p { margin-top: 6px; }
+.story h3 { margin-top: 14px; }
+.story .seg { margin-top: 8px; }
+.cmds { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; margin-top: 14px; }
+.cmds .code { margin: 0; flex: 0 1 auto; min-width: 0; max-width: 100%; }
+.cmds:empty { display: none; }
+.under { margin-top: 14px; overflow-x: auto; }
+.story h2 { margin-bottom: 4px; }
+.uses { display: grid; gap: 4px; margin: 4px 0 0; padding: 0; list-style: none; }
+.uses li { padding: 5px 8px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; }
+.uses li:hover, .uses li.on { border-color: var(--line); background: var(--bg); }
+.uses li code { display: block; font-size: 12px; color: var(--muted); }
+.acts { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.acts button { border: 1px solid var(--ink); background: var(--ink); color: var(--bg); border-radius: 8px; padding: 4px 9px; font-size: 13.5px; cursor: pointer; }
+.acts button:disabled { background: none; color: var(--muted); border-color: var(--line); cursor: default; }
+.acts .ghost { background: none; color: var(--ink); border-color: var(--line); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th, td { text-align: left; vertical-align: top; padding: 6px 8px; border-top: 1px solid var(--line); }
+thead th { border-top: 0; color: var(--muted); font-weight: 600; }
+tbody th { font-weight: 500; color: var(--muted); }
+
+#tip { position: absolute; z-index: 10; max-width: 330px; padding: 9px 12px 10px; border-radius: 10px; background: var(--ink); color: var(--bg); font-size: 13px; line-height: 1.45; box-shadow: 0 8px 24px rgb(0 0 0 / .25); pointer-events: none; }
+#tip b { display: block; font-family: var(--mono); font-size: 12.5px; margin-bottom: 2px; }
+#tip code { opacity: .85; }
+footer { max-width: 1280px; margin: 0 auto; padding: 0 24px 40px; color: var(--muted); font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>pov-repo</h1>
+    <code class="formula"><b class="t-pov">pov-repo</b>[ <b class="t-skill">skill-repo</b>[ <b class="t-repo">repo</b> ] ]</code>
+  </div>
+  <p class="lead">A repository, wrapped twice. The inner wrapper is what you share about it. The outer one is yours alone: the point of view you work from.</p>
+  <div class="bar">
+    <nav id="nav" aria-label="views">
+      <button data-view="idea">The idea</button>
+      <button data-view="two-folders">Two folders</button>
+      <button data-view="one-folder">One folder</button>
+    </nav>
+    <ul class="legend">
+      <li class="pov"><i></i>private · pov-repo</li>
+      <li class="skill"><i></i>sharable · skill-repo</li>
+      <li class="repo"><i></i>unaware · repo</li>
+      <li class="skill dash"><i></i>through a remote</li>
+    </ul>
+  </div>
+</header>
+<main>
+  <section class="view" id="view-idea"></section>
+  <section class="view" id="view-two-folders"></section>
+  <section class="view" id="view-one-folder"></section>
+</main>
+<footer>A pov-repo starts from the newest <code>t*-init-pov-repo</code> tag of <code>github.com/kindkitchen/wrapooncell</code>. For now a whole node may live in one origin, as the branches <code>pov-repo/&lt;name&gt;/main</code>, <code>skill-repo/&lt;name&gt;/main</code> and <code>repo/&lt;name&gt;/main</code>: wrapooncell-cli does. Hover or click anything.</footer>
+<div id="tip" role="tooltip" hidden></div>
+
+<script>
+const $ = (sel, el = document) => el.querySelector(sel);
+const $$ = (sel, el = document) => [...el.querySelectorAll(sel)];
+const esc = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const code = (text) => `<pre class="code">${esc(text).replace(/(^|\s)(#.*)$/gm, '$1<span class="c">$2</span>')}</pre>`;
+const other = (name) => (name === 'backend' ? 'frontend' : 'backend');
+const START = 'git clone --branch t006-init-pov-repo https://github.com/kindkitchen/wrapooncell.git';
+
+// The two nodes of the demos: what each shares, what its repository holds, what its pov-repo keeps.
+const NODES = {
+  backend: {
+    shared: [
+      ['SKILL.md', 'Says <code>name: backend</code>, the name of the folder it is mounted in. How to work with the backend: where the contract is, how to run it. A harness lists it as a skill and reads the body only when a task needs it.'],
+      ['dev.nu', 'Starts the API locally, with seed data. Whoever mounts this skill-repo runs it without knowing the insides.'],
+      ['api.md', 'The contract in words: auth, errors, paging.'],
+    ],
+    code: ['src/', 'openapi.yaml', 'migrations/'],
+    notes: 'What was learned while debugging the backend: the memory of its agent.',
+    recipe: 'just db-reset',
+    head: 'a1f3',
+  },
+  frontend: {
+    shared: [
+      ['SKILL.md', 'Says <code>name: frontend</code>, the name of the folder it is mounted in. How the UI is built and where its calls to the API live. A harness lists it as a skill and reads the body only when a task needs it.'],
+      ['e2e.nu', 'Runs the smoke tests of the UI against any API url.'],
+      ['api-usage.md', 'Which endpoints and fields the UI really reads.'],
+    ],
+    code: ['src/', 'src/api/', 'package.json'],
+    notes: 'What was learned while building the UI: the memory of its agent.',
+    recipe: 'just preview',
+    head: 'e9b2',
+  },
+};
+// What a pov-repo does with the skill-repo of the other: [what for, with what, what lights up].
+const USES = {
+  backend: [
+    ['Who reads this field, before renaming it', 'skills/frontend/frontend/src/api/', ['code:backend:frontend:1']],
+    ['Their smoke tests, against my branch', 'nu skills/frontend/e2e.nu http://localhost:8080', ['mount:backend:frontend:1']],
+    ['Its agent learns the frontend only when a task touches it', 'skills/frontend/SKILL.md', ['mount:backend:frontend:0']],
+  ],
+  frontend: [
+    ['A real API while building the UI', 'nu skills/backend/dev.nu', ['mount:frontend:backend:1']],
+    ['Types from the contract, at the pinned commit', 'skills/backend/backend/openapi.yaml', ['code:frontend:backend:1']],
+    ['Its agent learns the backend only when a task touches it', 'skills/backend/SKILL.md', ['mount:frontend:backend:0']],
+  ],
+};
+
+const state = { view: 'idea', step: 1, pov: 'backend', moved: 0, one: 'backend', rule: null };
+
+// ---------- what a thing says when hovered ----------
+function info(id) {
+  const [kind, a, b, c] = id.split(':');
+  if (kind === 'idea') return IDEA[a];
+  if (kind === 'pov' && !b) return [`pov-repo of ${a}`, `Private: the devx space of one point of view. It starts from the newest init tag, is a root of its own and mounts skill-repos, nothing else. Nobody mounts a pov-repo.`];
+  if (kind === 'pov') return {
+    config: ['.pov-repo/config.toml', 'The marker and the declaration: the folder of skill-repos, the branch each one follows, the pov-repos it knows. <code>just status pov-repo</code> errors when it is not satisfied.'],
+    just: ['justfile', `The entrypoint: <code>just status pov-repo</code>, <code>just switch pov-repo</code>, and recipes only this point of view needs, like <code>${NODES[a].recipe}</code>.`],
+    notes: ['notes/', `${NODES[a].notes} Committed here, and here only.`],
+    env: ['.env', 'Local secrets. Not even committed: they belong to the folder.'],
+  }[b];
+  if (kind === 'folder') return ['skills/', 'Where skill-repos are mounted, as <code>skills/&lt;name&gt;/</code>. The config names the folder, and <code>.pi/settings.json</code> points the harness at it.'];
+  if (kind === 'mount' && c === undefined) return a === b
+    ? [`skills/${b}/ · mine`, `The skill-repo of its own node. Here is where it is worked on: a commit pushed from this mount moves the head that others follow.`]
+    : [`skills/${b}/ · theirs`, `The skill-repo of ${b}, mounted to use it. It came through its remote, is pinned at a commit and subscribed to a branch. The pov-repo of ${b} stays out of sight.`];
+  if (kind === 'mount') return [`skills/${b}/${NODES[b].shared[c][0]}`, NODES[b].shared[c][1]];
+  if (kind === 'code') return [`skills/${b}/${b}/`, `The ${b} itself, mounted by its skill-repo at a pinned commit. It lives without knowing of any wrapper.`];
+  if (kind === 'remote') return a === 'skill'
+    ? [`skill-repo of ${b}`, `Sharable. Every pov-repo that mounts it takes it from here, at the commit it pins. Its head moves when the pov-repo of ${b} pushes.`]
+    : [`repo of ${b}`, `The repository as it has always been. Its skill-repo pins a commit of it.`];
+  if (kind === 'asleep') return [`pov-repo/${a}/main`, `The other point of view, asleep as a branch. Its notes, its pins and its recipes are in its commits, not in the folder. Click to wake it.`];
+}
+const IDEA = {
+  pov: ['pov-repo · private', 'A devx space around one node, for you alone. It starts from the newest <code>t*-init-pov-repo</code> tag, is a root of its own, and mounts skill-repos: nothing else.'],
+  config: ['.pov-repo/config.toml', 'The marker and the declaration: the folder of skill-repos, the branch each one follows, the pov-repos it knows.'],
+  main: ['.pov-repo/main.nu', 'The essential scripts, in nushell. The justfile is their entrypoint.'],
+  just: ['justfile', 'The public face: <code>just status pov-repo</code>, <code>just switch pov-repo</code>. Your own recipes go here too.'],
+  pi: ['.pi/settings.json', 'Points the harness at <code>skills/</code>, so every mounted skill-repo is listed as a skill.'],
+  yours: ['notes/  .env  …', 'Anything only you need. Nobody mounts a pov-repo, so nobody sees it.'],
+  folder: ['skills/', 'Where skill-repos are mounted, as <code>&lt;folder&gt;/&lt;name&gt;/</code>. The config names the folder.'],
+  skill: ['skill-repo · sharable', 'What you share about the node: a <code>SKILL.md</code>, whatever helps others, and the repo mounted beside. In the pov-repo of its own node is where it is worked on.'],
+  skillmd: ['SKILL.md', 'Its <code>name</code> is the name of the folder it is mounted in. A harness shows the description and reads the body only when a task needs it.'],
+  shared: ['scripts, docs …', 'What you want others to have: how to run it, the contract, helpers.'],
+  repo: ['repo · unaware', 'The target repository, mounted as <code>&lt;name&gt;/</code> at a pinned commit. It lives without knowing of any wrapper.'],
+  other: ['another skill-repo', 'The sharable layer of another node, mounted to use it: through its remote, pinned at a commit, subscribed to a branch. Its pov-repo stays out of sight.'],
+};
+
+// ---------- the pieces of a scene ----------
+const chip = (id, label) => `<button class="chip" data-id="${id}">${label}</button>`;
+function mount(pov, name) {
+  const node = NODES[name];
+  return `<section class="box skill" data-id="mount:${pov}:${name}" data-node="${name}" data-wire="remote:skill:${name}" tabindex="0">
+    <header><span class="path">${name}/</span><span class="role">${pov === name ? 'mine' : 'theirs'}</span><span class="pin" data-pin="${pov}:${name}"></span></header>
+    <div class="chips">${node.shared.map(([label], i) => chip(`mount:${pov}:${name}:${i}`, label)).join('')}</div>
+    <section class="box repo" data-id="code:${pov}:${name}" tabindex="0">
+      <header><span class="path">${name}/</span><span class="role">the repo</span></header>
+      <div class="chips">${node.code.map((label, i) => chip(`code:${pov}:${name}:${i}`, label)).join('')}</div>
+    </section>
+  </section>`;
+}
+function povBox(pov, folder) {
+  return `<section class="box pov" data-id="pov:${pov}" tabindex="0">
+    <header><span class="path">${folder}</span><span class="role">pov-repo · private</span></header>
+    <div class="chips">${chip(`pov:${pov}:config`, '.pov-repo/config.toml')}${chip(`pov:${pov}:just`, 'justfile')}${chip(`pov:${pov}:notes`, 'notes/')}${chip(`pov:${pov}:env`, '.env')}</div>
+    <div class="folder" data-id="folder:${pov}"><span class="path">skills/</span>${mount(pov, pov)}${mount(pov, other(pov))}</div>
+  </section>`;
+}
+const remote = (name) => `<div class="remote">
+    <section class="box skill" data-id="remote:skill:${name}" data-node="${name}" tabindex="0"><header><span class="path">skill-repo</span> <span class="role">of ${name}</span></header><span class="pin" data-head="${name}"></span></section>
+    <span class="link" data-link="${name}"></span>
+    <section class="box repo" data-id="remote:repo:${name}" tabindex="0"><header><span class="path">repo</span> <span class="role">of ${name}</span></header></section>
+  </div>`;
+const remotes = (first = 'backend') => `<div class="remotes"><span class="path">remotes</span>${remote(first)}${remote(other(first))}</div>`;
+
+// ---------- view: the idea ----------
+const RULES = [
+  ['strangers', 'Strangers', 'A pov-repo never lives below another one.',
+    'A pov-repo never lives below another one, at any depth. Each is a root of its own: <code>.pov-repo/config.toml</code> marks it, and <code>just status pov-repo</code> errors when it finds a second one below.',
+    `<rect class="p" x="6" y="16" width="22" height="26" rx="4"/><rect class="p" x="34" y="16" width="22" height="26" rx="4"/><path class="ok" d="M24 50l4 4 8-9"/>
+     <rect class="p" x="72" y="10" width="42" height="34" rx="5"/><rect class="p" x="82" y="19" width="22" height="18" rx="3"/><path class="no" d="M88 48l10 8m0-8l-10 8"/>`],
+  ['skill', 'Skill layer only', 'It mounts nothing but skill-repos.',
+    'A pov-repo mounts nothing but skill-repos, each through its remote: the one of its own node too.',
+    `<rect class="p" x="6" y="8" width="108" height="44" rx="6"/><rect class="s" x="14" y="20" width="26" height="24" rx="4"/><rect class="s" x="46" y="20" width="26" height="24" rx="4"/>
+     <rect class="r" x="80" y="20" width="26" height="24" rx="4"/><path class="no" d="M86 26l14 12m0-12l-14 12"/>`],
+  ['subscribed', 'Subscribed', 'A mount follows a branch.',
+    'A mount follows a branch of its skill-repo: the head that the pov-repo of that node moves forward, or a branch moved from here, which others may follow in turn.',
+    `<path class="l" d="M8 20h100m-6-5l6 5-6 5"/><circle class="s" cx="24" cy="20" r="5"/><circle class="s" cx="56" cy="20" r="5"/><circle class="s" cx="88" cy="20" r="5"/>
+     <path class="p" d="M88 46V32m-5 5l5-5 5 5" fill="none"/><text x="8" y="9">main</text><text x="76" y="49" text-anchor="end">the mount</text>`],
+  ['declared', 'Declared', 'The config says, <code>status</code> checks.',
+    '<code>.pov-repo/config.toml</code> declares what a pov-repo wants: the folder of its skill-repos and the branch each one follows. <code>just status pov-repo</code> errors when what is really here does not satisfy it.',
+    `<rect class="p" x="10" y="10" width="34" height="40" rx="4"/><path class="l" d="M17 20h20M17 28h20M17 36h12"/>
+     <rect class="s" x="76" y="10" width="34" height="40" rx="4"/><path class="l" d="M83 20h20M83 28h20M83 36h12"/><path class="ok" d="M52 26h16m-16 8h16"/>`],
+  ['manual', 'Manual', 'A pin moves when someone commits it.',
+    'Nothing follows by itself. A pin moves when someone commits it, each repository for itself.',
+    `<path class="l" d="M8 20h104"/><circle class="s" cx="24" cy="20" r="5"/><circle class="s" cx="56" cy="20" r="5"/><circle class="s" cx="88" cy="20" r="5"/>
+     <path class="p" d="M56 46V32m-5 5l5-5 5 5" fill="none"/><path class="l" d="M64 40h16" stroke-dasharray="3 3"/><path class="l" d="M77 36l4 4-4 4"/><text x="72" y="55" text-anchor="middle">a commit</text>`],
+];
+const RULE_LIGHTS = { strangers: ['idea:pov'], skill: ['idea:skill', 'idea:other'], subscribed: ['idea:other', 'idea:skill'], declared: ['idea:config'], manual: ['idea:other', 'idea:skill'] };
+// What may be wrong with what is really here: [key, the words, the line `just status pov-repo` prints].
+const WRONGS = [
+  ['below', 'another pov-repo was cloned into <code>tmp/</code>', 'a pov-repo lives below this one: tmp/pov-frontend'],
+  ['branch', '<code>skills/frontend</code> follows <code>next</code>, not <code>main</code>', 'declared, subscribed otherwise: skills/frontend'],
+  ['absent', '<code>skills/frontend</code> is not mounted at all', 'declared, not mounted: skills/frontend'],
+  ['extra', '<code>skills/extra</code> is mounted too', 'mounted, not declared: skills/extra'],
+  ['name', 'the <code>SKILL.md</code> in <code>skills/backend</code> says <code>name: api</code>', 'not a skill-repo, its SKILL.md must name it as its folder: skills/backend'],
+];
+function ideaView() {
+  $('#view-idea').innerHTML = `
+    <h2>One node, three layers</h2>
+    <p class="sub">The repository stays as it is. Around it goes what you share about it, and around that goes what only you need.</p>
+    <div class="idea"><div class="anatomy">
+      <section class="box pov" data-id="idea:pov" tabindex="0">
+        <header><span class="path">pov-repo</span><span class="role">private: yours alone, a root of its own</span></header>
+        <div class="chips">${chip('idea:config', '.pov-repo/config.toml')}${chip('idea:main', '.pov-repo/main.nu')}${chip('idea:just', 'justfile')}${chip('idea:pi', '.pi/settings.json')}${chip('idea:yours', 'notes/  .env  …')}</div>
+        <div class="folder" data-id="idea:folder"><span class="path">skills/</span>
+          <div class="mounts">
+            <section class="box skill" data-id="idea:skill" tabindex="0">
+              <header><span class="path">&lt;name&gt;/</span><span class="role">skill-repo · sharable: what others mount</span></header>
+              <div class="chips">${chip('idea:skillmd', 'SKILL.md')}${chip('idea:shared', 'scripts, docs …')}</div>
+              <section class="box repo" data-id="idea:repo" tabindex="0">
+                <header><span class="path">&lt;name&gt;/</span><span class="role">repo · unaware: lives without knowing</span></header>
+                <div class="chips"><span class="chip">the code</span></div>
+              </section>
+            </section>
+            <section class="box skill" data-id="idea:other" tabindex="0">
+              <header><span class="path">&lt;other&gt;/</span><span class="role">another skill-repo, to use</span></header>
+              <div class="chips"><span class="chip">SKILL.md</span><span class="chip">…</span></div>
+              <section class="box repo"><header><span class="path">&lt;other&gt;/</span></header></section>
+            </section>
+          </div>
+        </div>
+      </section>
+    </div>
+    <ol class="layers">
+      <li class="repo" data-lights="idea:repo"><b>repo</b>The repository, as it is. It lives without knowing of any wrapper.</li>
+      <li class="skill" data-lights="idea:skill,idea:other"><b>skill-repo</b>What you share about it: a <code>SKILL.md</code>, scripts, docs. It is all that others mount.</li>
+      <li class="pov" data-lights="idea:pov"><b>pov-repo</b>What only you need, and the place you stand in. It mounts skill-repos: your own to work on, those of others to use.</li>
+    </ol></div>
+
+    <div class="block">
+      <h2>Five rules</h2>
+      <div class="rules">${RULES.map(([key, name, line, , art]) => `<button class="rule" data-rule="${key}" aria-pressed="false"><svg viewBox="0 0 120 60" aria-hidden="true">${art}</svg><b>${name}</b><span>${line}</span></button>`).join('')}</div>
+      <p class="sub" id="rule-text" style="margin-top:10px;min-height:3em"></p>
+    </div>
+
+    <div class="block">
+      <h2>Declared, then checked</h2>
+      <p class="sub">The config says what a pov-repo wants. <code>just status pov-repo</code> looks at what is really here. Break something:</p>
+      <div class="check">
+        <div class="card"><h3 class="file">.pov-repo/config.toml</h3>${code('skill-repo.folder = "skills"\n\n[skill-repo.submodule]\nbackend = "main"\nfrontend = "main"')}</div>
+        <div class="card"><h3>what is really here</h3><ul class="toggles">${WRONGS.map(([key, words]) => `<li><label><input type="checkbox" data-wrong="${key}"><span>${words}</span></label></li>`).join('')}</ul></div>
+        <pre class="code term" id="term" aria-live="polite"></pre>
+      </div>
+    </div>`;
+  status();
+}
+function status() {
+  const on = new Set($$('[data-wrong]:checked').map((box) => box.dataset.wrong));
+  if (on.has('absent')) on.delete('branch');
+  const rows = [['skills/backend', 'main', 'pinned'], ...(on.has('absent') ? [] : [['skills/frontend', on.has('branch') ? 'next' : 'main', 'pinned']]), ...(on.has('extra') ? [['skills/extra', 'main', 'pinned']] : [])];
+  const problems = WRONGS.filter(([key]) => on.has(key)).map(([, , line]) => line);
+  $('#term').innerHTML = `<span class="c">&gt; just status pov-repo</span>\n${rows.map((row) => ` ${row[0].padEnd(17)}${row[1].padEnd(6)}${row[2]}`).join('\n')}\n`
+    + (problems.length ? `<span class="bad">${problems.map((line) => `- ${line}`).join('\n')}\nerror: recipe \`status\` failed on line 5 with exit code 1</span>` : '<span class="good">.pov-repo/config.toml is satisfied</span>');
+}
+
+// ---------- view: two folders ----------
+const STEPS = [
+  ['Two repositories', () => `<p>They exist already and know nothing of what follows. They never will.</p>`, () => []],
+  ['A sharable wrapper each', () => `<p>A skill-repo is a <code>SKILL.md</code>, whatever helps others, and the repository mounted beside it.</p><p>It is all that anyone else will see of this node.</p>`,
+    () => ['git init -b main skill-backend; cd skill-backend\ngit submodule add <backend> backend\n# SKILL.md says `name: backend`; beside it dev.nu, api.md\ngit add .; git commit -m "skill-repo of backend"\ngit remote add origin <skill-backend>; git push -u origin main']],
+  ['A private wrapper each', () => `<p>A pov-repo starts from the newest init tag and mounts its own skill-repo: through the remote, like anyone else would.</p><p>What only this point of view needs lives here: notes, secrets, its own recipes.</p><p class="sub">The starter comes with <code>skills/wrapooncell-cli</code> mounted and declared. It is left out of the picture.</p>`,
+    () => [`${START} pov-backend\ncd pov-backend; git switch -c main; git remote remove origin\ngit submodule add -b main <skill-backend> skills/backend\n# .pov-repo/config.toml, under [skill-repo.submodule]:  backend = "main"\ngit add .; git commit -m "pov-repo of backend"\njust status pov-repo`]],
+  ['They meet', () => `<p>Each mounts the skill-repo of the other and declares it.</p><p>The two folders stay strangers: side by side, never one inside the other. Neither sees the pov-repo of the other.</p>`,
+    () => ['# in pov-backend\ngit submodule add -b main <skill-frontend> skills/frontend\njust status pov-repo\njust switch pov-repo frontend   # a shell at ../pov-frontend',
+      '# .pov-repo/config.toml of pov-backend\n[skill-repo.submodule]\nbackend = "main"     # mine\nfrontend = "main"    # theirs\n\n[pov-repo.frontend]\nbranch = "main"\nlocation = "../pov-frontend"']],
+  ['What each gets', () => `<p>Stand in one of them:</p>
+    <div class="seg">${['backend', 'frontend'].map((name) => `<button data-pov="${name}" aria-pressed="${state.pov === name}">pov-${name}</button>`).join('')}</div>
+    ${uses(state.pov)}`,
+    () => [`# in pov-${state.pov}: their code, fetched when it is needed\ngit submodule update --init --recursive skills/${other(state.pov)}`]],
+  ['Moving on', () => `<p>The backend moves its skill-repo forward. The frontend follows when it wants: nothing follows by itself.</p>
+    <div class="acts"><button data-move="1" ${state.moved >= 1 ? 'disabled' : ''}>backend pushes</button><button data-move="2" ${state.moved !== 1 ? 'disabled' : ''}>frontend follows</button><button class="ghost" data-move="0">again</button></div>
+    <p>${['Both are pinned at the same commit.', 'The head moved. The frontend is still pinned where it was, and still works.', 'The frontend pinned the new commit, in a commit of its own.'][state.moved]}</p>`,
+    () => ['# in pov-backend: the mount of my own skill-repo is where I work on it\ncd skills/backend\ngit commit -am "dev.nu: --seed"; git push\ncd ../..; git add skills/backend; git commit -m "pin my skill-repo"',
+      '# in pov-frontend, when it wants\ngit submodule update --remote skills/backend\ngit add skills/backend; git commit -m "follow backend"']],
+];
+function uses(pov) {
+  const them = other(pov);
+  return `<h3>takes from ${them}</h3><ul class="uses">${USES[pov].map(([what, how, lights]) => `<li data-lights="${lights}" tabindex="0">${what}<code>${esc(how)}</code></li>`).join('')}</ul>
+    <h3>gives</h3><ul class="uses"><li data-lights="mount:${pov}:${pov},mount:${them}:${pov}" tabindex="0">Its own skill-repo: written here, mounted there<code>skills/${pov}/</code></li></ul>
+    <h3>keeps</h3><ul class="uses"><li data-lights="pov:${pov}:notes,pov:${pov}:env,pov:${pov}:just" tabindex="0">Nobody mounts a pov-repo<code>notes/  .env  ${NODES[pov].recipe}</code></li></ul>`;
+}
+function twoView() {
+  $('#view-two-folders').innerHTML = `
+    <h2>Two repositories, two points of view, side by side</h2>
+    <p class="sub">A backend and a frontend. Each gets its own pov-repo in its own folder; they know each other only by their skill-repos.</p>
+    <ol class="steps">${STEPS.map(([name], i) => `<li><button data-step="${i + 1}">${name}</button></li>`).join('')}</ol>
+    <div class="demo">
+      <div>
+        <div class="scene" id="scene-two">
+          <div data-col="backend">${povBox('backend', 'pov-backend/')}</div>
+          ${remotes()}
+          <div data-col="frontend">${povBox('frontend', 'pov-frontend/')}</div>
+          <svg class="wires" aria-hidden="true"></svg>
+        </div>
+        <div class="cmds" id="cmds-two"></div>
+      </div>
+      <aside class="story"><div class="card" id="story-two"></div></aside>
+    </div>`;
+}
+function twoState() {
+  const scene = $('#scene-two'), step = state.step;
+  $$('.steps button').forEach((button) => button.toggleAttribute('aria-current', false));
+  $(`.steps button[data-step="${step}"]`).setAttribute('aria-current', 'step');
+  $('#story-two').innerHTML = `<h2>${step}. ${STEPS[step - 1][0]}</h2>${STEPS[step - 1][1]()}`;
+  $('#cmds-two').innerHTML = STEPS[step - 1][2]().map(code).join('');
+  // what exists at this step
+  for (const name of ['backend', 'frontend']) {
+    $(`[data-id="remote:skill:${name}"]`, scene).classList.toggle('gone', step < 2);
+    $(`[data-link="${name}"]`, scene).classList.toggle('gone', step < 2);
+    $(`[data-id="pov:${name}"]`, scene).classList.toggle('gone', step < 3);
+    $(`[data-id="mount:${name}:${other(name)}"]`, scene).classList.toggle('gone', step < 4);
+    $(`[data-id="pov:${name}"]`, scene).classList.toggle('away', step === 5 && state.pov !== name);
+  }
+  // the pins: what the remote holds, what each mount is pinned at
+  const moved = step === 6 ? state.moved : 0, head = { backend: moved >= 1 ? 'c7d9' : 'a1f3', frontend: 'e9b2' };
+  $$('[data-head]', scene).forEach((pin) => { pin.textContent = `@${head[pin.dataset.head]}`; pin.classList.toggle('new', head[pin.dataset.head] === 'c7d9'); });
+  $$('[data-pin]', scene).forEach((pin) => {
+    const [pov, name] = pin.dataset.pin.split(':'), at = name === 'backend' && pov === 'frontend' && moved < 2 ? 'a1f3' : head[name];
+    pin.textContent = `@${at}`;
+    pin.classList.toggle('new', at === 'c7d9');
+    pin.classList.toggle('behind', at !== head[name]);
+  });
+  lights(step === 4 ? ['mount:backend:frontend', 'mount:frontend:backend'] : step === 6 && moved === 1 ? ['mount:backend:backend', 'remote:skill:backend'] : step === 6 && moved === 2 ? ['mount:frontend:backend', 'remote:skill:backend'] : []);
+  wire(scene, step === 6 && moved === 2);
+}
+
+// ---------- view: one folder ----------
+function oneView() {
+  $('#view-one-folder').innerHTML = `
+    <h2>The same two, as two branches of one repository</h2>
+    <p class="sub">More compact: one folder, one clone of each skill-repo. The price: one point of view at a time.</p>
+    <div class="demo">
+      <div>
+        <div class="branchbar"><code>just switch pov-repo</code><div class="seg">${['backend', 'frontend'].map((name) => `<button data-one="${name}">${name}</button>`).join('')}</div></div>
+        <div class="scene one" id="scene-one"><div id="one-folder"></div><div id="one-remotes"></div><svg class="wires" aria-hidden="true"></svg></div>
+      </div>
+      <aside class="story"><div class="card" id="story-one"></div></aside>
+    </div>`;
+  $('#scene-one').parentElement.insertAdjacentHTML('beforeend', `
+    <div class="card under"><table>
+      <thead><tr><th></th><th>two folders</th><th>one folder</th></tr></thead>
+      <tbody>
+        <tr><th>a pov-repo is</th><td>a repository</td><td>a branch</td></tr>
+        <tr><th>in its config</th><td><code>location = "../pov-frontend"</code></td><td>no location</td></tr>
+        <tr><th><code>just switch pov-repo</code></th><td>opens a shell at the other folder</td><td>changes the branch in place</td></tr>
+        <tr><th>both at once</th><td>yes</td><td>no: one point of view at a time</td></tr>
+        <tr><th>what is not committed, like <code>.env</code></th><td>belongs to its folder</td><td>is shared by both</td></tr>
+      </tbody>
+    </table></div>
+    <div class="cmds">${code(`${START} pov\ncd pov; git remote remove origin\ngit switch -c pov-repo/backend/main\ngit submodule add -b main <skill-backend> skills/backend\ngit submodule add -b main <skill-frontend> skills/frontend\n# .pov-repo/config.toml: both under [skill-repo.submodule]\ngit add .; git commit -m "both skill-repos, both pov-repos"\ngit branch pov-repo/frontend/main\njust switch pov-repo frontend`)}${code('# .pov-repo/config.toml, the same on both branches\n[pov-repo.backend]\nbranch = "pov-repo/backend/main"\n\n[pov-repo.frontend]\nbranch = "pov-repo/frontend/main"')}</div>`);
+}
+function oneState(swap) {
+  const pov = state.one, scene = $('#scene-one');
+  $$('[data-one]').forEach((button) => button.setAttribute('aria-pressed', button.dataset.one === pov));
+  $('#one-folder').innerHTML = `${povBox(pov, 'pov/')}<div class="asleep" data-id="asleep:${other(pov)}" tabindex="0">asleep: <code>pov-repo/${other(pov)}/main</code></div>`;
+  $('#one-folder .box.pov > header .role').innerHTML = `pov-repo · private · on <code>pov-repo/${pov}/main</code>`;
+  $('#one-remotes').innerHTML = remotes(pov);
+  if (swap) { $('#one-folder').classList.remove('swap'); void $('#one-folder').offsetWidth; $('#one-folder').classList.add('swap'); }
+  // each branch pins for itself: the frontend has not followed the backend yet
+  const head = { backend: 'c7d9', frontend: 'e9b2' };
+  $$('[data-head]', scene).forEach((pin) => { pin.textContent = `@${head[pin.dataset.head]}`; });
+  $$('[data-pin]', scene).forEach((pin) => {
+    const [at_pov, name] = pin.dataset.pin.split(':'), at = name === 'backend' && at_pov === 'frontend' ? 'a1f3' : head[name];
+    pin.textContent = `@${at}`;
+    pin.classList.toggle('behind', at !== head[name]);
+  });
+  $('#story-one').innerHTML = `<h2>Standing in ${pov}</h2>
+    <p><code>just switch pov-repo ${other(pov)}</code> is <code>git switch --recurse-submodules</code>: the notes, the recipes and the pins of the other branch take the place of these.</p>
+    ${uses(pov)}`;
+  lights([]);
+  wire(scene);
+}
+
+// ---------- lights, wires, the tooltip ----------
+function lights(ids) {
+  $$('.hot').forEach((el) => el.classList.remove('hot'));
+  $$('.uses li.on').forEach((el) => el.classList.remove('on'));
+  for (const id of ids) $$(`.view.on [data-id="${id}"]`).forEach((el) => el.classList.add('hot'));
+  hotWires();
+}
+function hotWires() {
+  $$('.wire').forEach((path) => path.classList.toggle('hot', $$(`.view.on [data-id="${path.dataset.from}"].hot`).length > 0));
+}
+function wire(scene, back = false) {
+  const svg = $('.wires', scene), base = scene.getBoundingClientRect();
+  svg.setAttribute('viewBox', `0 0 ${base.width} ${base.height}`);
+  svg.innerHTML = '';
+  for (const from of $$('[data-wire]', scene)) {
+    const to = $(`[data-id="${from.dataset.wire}"]`, scene);
+    if (!from.offsetParent || !to.offsetParent) continue;
+    const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+    const y1 = a.top + 17 - base.top, y2 = b.top + b.height / 2 - base.top;
+    let d;
+    if (a.right < b.left || b.right < a.left) {        // side by side
+      const x1 = (a.right < b.left ? a.right : a.left) - base.left, x2 = (a.right < b.left ? b.left : b.right) - base.left, k = (x2 - x1) / 2;
+      d = `M${x1},${y1} C${x1 + k},${y1} ${x2 - k},${y2} ${x2},${y2}`;
+    } else {                                           // one above the other: around the right side
+      const x1 = a.right - base.left, x2 = b.right - base.left, out = Math.max(x1, x2) + 34;
+      d = `M${x1},${y1} C${out},${y1} ${out},${y2} ${x2},${y2}`;
+    }
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('class', `wire${back ? ' back' : ''}${from.closest('.away') ? ' faint' : ''}`);
+    path.dataset.from = from.dataset.id;
+    path.dataset.to = from.dataset.wire;
+    svg.append(path);
+  }
+  hotWires();
+}
+const tip = $('#tip');
+let stuck = null;
+function show(el) {
+  const said = info(el.dataset.id);
+  if (!said) return hide();
+  tip.innerHTML = `<b>${said[0]}</b>${said[1]}`;
+  tip.hidden = false;
+  const box = el.getBoundingClientRect(), mine = tip.getBoundingClientRect();
+  const left = Math.max(8, Math.min(box.left, document.documentElement.clientWidth - mine.width - 8));
+  const above = box.top - mine.height - 8;
+  tip.style.left = `${left + scrollX}px`;
+  tip.style.top = `${(above > 8 ? above : Math.min(box.bottom, box.top + 30) + 8) + scrollY}px`;
+}
+function hide() { tip.hidden = true; }
+
+// ---------- state, routes, events ----------
+function render(swap = false) {
+  $$('.view').forEach((view) => view.classList.toggle('on', view.id === `view-${state.view}`));
+  $$('#nav button').forEach((button) => button.toggleAttribute('aria-current', false));
+  $(`#nav button[data-view="${state.view}"]`).setAttribute('aria-current', 'page');
+  hide(); stuck = null;
+  if (state.view === 'two-folders') twoState();
+  if (state.view === 'one-folder') oneState(swap);
+  if (state.view === 'idea') {
+    $$('.rule').forEach((button) => button.setAttribute('aria-pressed', button.dataset.rule === state.rule));
+    const rule = RULES.find(([key]) => key === state.rule);
+    $('#rule-text').innerHTML = rule ? rule[3] : 'Hover a rule to see what it touches.';
+    lights(rule ? RULE_LIGHTS[rule[0]] : []);
+  }
+  const hash = { idea: '#idea', 'two-folders': `#two-folders/${state.step}${state.step === 5 ? `/${state.pov}` : ''}`, 'one-folder': `#one-folder/${state.one}` }[state.view];
+  if (location.hash !== hash) history.replaceState(null, '', hash);
+}
+function route() {
+  const [view, a, b] = location.hash.slice(1).split('/');
+  if (view === 'two-folders') Object.assign(state, { view, step: Math.min(6, Math.max(1, Number(a) || 1)), pov: b in NODES ? b : state.pov, moved: 0 });
+  else if (view === 'one-folder') Object.assign(state, { view, one: a in NODES ? a : state.one });
+  else state.view = 'idea';
+  render();
+}
+document.addEventListener('click', (event) => {
+  const el = (sel) => event.target.closest(sel);
+  let hit;
+  if ((hit = el('[data-view]'))) { state.view = hit.dataset.view; return render(); }
+  if ((hit = el('[data-step]'))) { state.step = Number(hit.dataset.step); state.moved = 0; return render(); }
+  if ((hit = el('[data-pov]'))) { state.pov = hit.dataset.pov; return render(); }
+  if ((hit = el('[data-move]'))) { state.moved = Number(hit.dataset.move); return render(); }
+  if ((hit = el('[data-one]'))) { state.one = hit.dataset.one; return render(true); }
+  if ((hit = el('[data-rule]'))) { state.rule = state.rule === hit.dataset.rule ? null : hit.dataset.rule; return render(); }
+  if ((hit = el('[data-lights]'))) { lights(hit.dataset.lights.split(',')); hit.classList.add('on'); return; }
+  if ((hit = el('.away'))) { state.pov = other(state.pov); return render(); }
+  if ((hit = el('.asleep'))) { state.one = other(state.one); return render(true); }
+  if ((hit = el('[data-id]'))) { stuck = stuck === hit ? null : hit; return stuck ? show(hit) : hide(); }
+  stuck = null; hide();
+});
+document.addEventListener('change', (event) => { if (event.target.matches('[data-wrong]')) status(); });
+document.addEventListener('mouseover', (event) => {
+  const el = event.target.closest('[data-id], [data-rule], [data-lights]');
+  if (!el) return;
+  if (el.dataset.id && !stuck) show(el);
+  if (el.dataset.rule && state.view === 'idea') { $('#rule-text').innerHTML = RULES.find(([key]) => key === el.dataset.rule)[3]; lights(RULE_LIGHTS[el.dataset.rule]); }
+  if (el.dataset.lights) { lights(el.dataset.lights.split(',')); el.classList.add('on'); }
+  if (el.dataset.id && el.dataset.node) { $$(`.view.on .wire`).forEach((path) => path.classList.toggle('hot', path.dataset.from === el.dataset.id || path.dataset.to === el.dataset.id)); }
+});
+document.addEventListener('mouseout', (event) => {
+  const el = event.target.closest('[data-id], [data-rule], .layers [data-lights]');
+  if (!el || el.contains(event.relatedTarget)) return;
+  if (el.dataset.id && !stuck) hide();
+  if ((el.dataset.rule || el.dataset.lights) && state.view === 'idea') render();
+  if (el.dataset.node) hotWires();
+});
+document.addEventListener('focusin', (event) => { const el = event.target.closest('[data-id]'); if (el && !stuck) show(el); });
+document.addEventListener('keydown', (event) => {
+  const at = event.target instanceof Element ? event.target : document.body;
+  if (event.key === 'Escape') { stuck = null; hide(); }
+  if (event.key === 'Enter' && at.matches('[data-lights], section[data-id], div[data-id]')) at.click();
+  if (state.view === 'two-folders' && !at.closest('input') && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
+    state.step = Math.min(6, Math.max(1, state.step + (event.key === 'ArrowRight' ? 1 : -1))); state.moved = 0; render();
+  }
+});
+addEventListener('hashchange', route);
+addEventListener('resize', () => { if (state.view !== 'idea') wire($(`#scene-${state.view === 'two-folders' ? 'two' : 'one'}`)); });
+
+ideaView(); twoView(); oneView(); route();
+</script>
+</body>
+</html>
