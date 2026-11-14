@@ -1,13 +1,23 @@
-# The marker and the declaration of a pov-repo. `just status pov-repo` errors when it is not satisfied.
+# The marker and the declaration of a pov-repo: the source of truth. What git holds of it is derived:
+# `just update skill-repo` brings what is not here yet, `just status pov-repo` errors when something here contradicts it.
 #
 # No pov-repo lives below another: this is the only `.pov-repo/config.toml` from the root down.
 
 # Skill-repos are mounted at `<folder>/<name>/`.
 skill-repo.folder = "skills"
 
-# The mounted skill-repos and the branch each one is subscribed to: `<name> = "<branch>"`.
-[skill-repo.submodule]
-wrapooncell-cli = "skill-repo/wrapooncell-cli/main"
+# A mounted skill-repo, `<name>`, by its variants: each a remote, by its `remote` name and its `url`, and a `branch` there.
+# The first is the mounted one: what `.gitmodules` is told, where the mount stands, what `update` brings.
+# Each further `[[skill-repo.submodule.<name>]]` is a remote beside it, to `pull` from and `push` to.
+[[skill-repo.submodule.wrapooncell-cli]]
+remote = "wrapooncell"
+url = "https://github.com/kindkitchen/wrapooncell.git"
+branch = "skill-repo/wrapooncell-cli/main"
+
+# [[skill-repo.submodule.wrapooncell-cli]]
+# remote = "origin"
+# url = "<a remote of your own>"
+# branch = "skill-repo/wrapooncell-cli/main"
 
 # The pov-repos `just switch pov-repo` goes to: the branch each one is on, and its location when it has one.
 # Without a location it is a branch of this very repository. A location is a path from this root.

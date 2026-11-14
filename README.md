@@ -5,6 +5,9 @@ This is a pov-repo. The whole idea, to click through: [readme.pov-repo.html](htt
 ## Technical preferences
 
 - `nushell` is a main shell - should be used for terminal commands, scripts, examples.
+- A script is called as `<action> <target>`: the target overloads the action. A justfile simplifies it into the public api: `just <action> <target>` at least.
+- Parameters are named, never positional.
+- A write is only said by default (dry-run), and done with an explicit `--apply`.
 
 
 # Agentic instructions
